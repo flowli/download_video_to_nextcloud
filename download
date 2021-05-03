@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# basics
+DIR=`dirname $0`
+PWD=`cd "$DIR" && pwd`
+
+# input
+VIDEO_URL="$1"
+NC_USER="$2"
+if [ "$1" == "" ]; then
+	echo "Syntax: $0 <video-url> <username>"
+	exit 1
+fi
+if [ "$2" == "" ]; then
+	echo "Syntax: $0 <video-url> <username>"
+	exit 1
+fi
+
+# config
+NC_SYSTEM_USER="www-data"
+NC_APP_DIR="/var/www/nc.arweb.de"
+NC_USER_DIR="/var/www/data/${NC_USER}/files"
+
+# action
+## update youtube-dl
+echo -n "Updating youtube-dl… "
+sudo wget -q https://yt-dl.org/downloads/latest/youtube-dl -O /usr/bin/youtube-dl
+chmod 755 /usr/bin/youtube-dl
+echo "done."
+
+## download video
+echo -n "Loading video… "
+CMD="cd '${NC_USER_DIR}' && youtube-dl -q '${VIDEO_URL}'"
+echo "$CMD"
+su -c "${CMD}" "${NC_SYSTEM_USER}"
+echo "done."
+
+## scan path for nextcloud index
+echo -n "Updating NextCloud file index… "
+CMD="php '${NC_APP_DIR}/occ' files:scan --path='${NC_USER}'"
+echo "$CMD"
+su -c "${CMD}" "${NC_SYSTEM_USER}"
+echo "done."
